@@ -160,41 +160,41 @@ const QuranRecitation = () => {
       </div>
 
       {/* 2. منطقة النتائج (النص + الصوت) */}
-      <Card className="w-full relative min-h-[160px] p-6 bg-slate-50/50 dark:bg-slate-900/20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-center transition-all">
+      {audioUrl && !isListening && (
+        <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <audio
+            ref={audioRef}
+            src={audioUrl}
+            onEnded={() => setIsPlaying(false)}
+            className="hidden"
+          />
+
+          <Button
+            onClick={togglePlayback}
+            variant={isPlaying ? "secondary" : "default"}
+            className="rounded-full gap-2 px-6 transition-all"
+          >
+            {isPlaying ? (
+              <Pause className="w-4 h-4" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            {isPlaying ? "إيقاف مؤقت" : "استماع لتسجيلك"}
+          </Button>
+        </div>
+      )}
+      {/* <Card className="w-full relative min-h-[160px] p-6 bg-slate-50/50 dark:bg-slate-900/20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-center transition-all">
         {/* النص */}
-        {text ? (
+      {/* مشغل الصوت المخفي + زر التحكم */}
+
+      {/* {text ? (
           <div className="w-full space-y-4">
-            {/* <p
+            <p
               className="text-xl md:text-2xl leading-[2] font-quran text-foreground animate-in fade-in zoom-in-95 duration-300"
               dir="rtl"
             >
               {text}
-            </p> */}
-
-            {/* مشغل الصوت المخفي + زر التحكم */}
-            {audioUrl && !isListening && (
-              <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                <audio
-                  ref={audioRef}
-                  src={audioUrl}
-                  onEnded={() => setIsPlaying(false)}
-                  className="hidden"
-                />
-
-                <Button
-                  onClick={togglePlayback}
-                  variant={isPlaying ? "secondary" : "default"}
-                  className="rounded-full gap-2 px-6 transition-all"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-4 h-4" />
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
-                  {isPlaying ? "إيقاف مؤقت" : "استماع لتسجيلك"}
-                </Button>
-              </div>
-            )}
+            </p>
           </div>
         ) : (
           <div className="text-muted-foreground/50 text-sm flex flex-col items-center gap-2">
@@ -204,10 +204,10 @@ const QuranRecitation = () => {
               <span>اضغط الميكروفون واقرأ الآية...</span>
             )}
           </div>
-        )}
+        )} */}
 
-        {/* أدوات (نسخ وحذف) */}
-        {/* {text && !isListening && (
+      {/* أدوات (نسخ وحذف) */}
+      {/* {text && !isListening && (
           <div className="absolute top-2 left-2 flex gap-1 bg-background/80 p-1 rounded-lg border shadow-sm backdrop-blur-sm">
             <Button
               variant="ghost"
@@ -232,12 +232,12 @@ const QuranRecitation = () => {
             </Button>
           </div>
         )} */}
-      </Card>
+      {/* </Card> */}
 
       {/* التنويه */}
       <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border/50 text-xs text-muted-foreground max-w-sm text-center">
         <Info className="w-4 h-4 shrink-0 text-primary/70" />
-        <p>هذه مجرد أداة تساعدك للمراجعة وبها أخطاء لتحويل الصوت الي نص</p>
+        <p>هذه مجرد أداة تساعدك للمراجعة </p>
       </div>
     </div>
   );
