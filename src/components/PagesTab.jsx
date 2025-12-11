@@ -1,4 +1,5 @@
 import useAppContext from "@/AppContext";
+import StateCheck from "./ui/StateCheck";
 
 function PagesTab() {
   const { state, dispatch } = useAppContext();
@@ -20,27 +21,12 @@ function PagesTab() {
       <h2 className="text-center my-4 font-cairo w-full block text-xl font-semibold text-gray-800 dark:text-gray-200">
         اختر نطاق الصفحات
       </h2>
-      <div dir="rtl">
-        <label className="inline-flex items-center space-x-2 rtl:space-x-reverse mb-4">
-          <input
-            type="checkbox"
-            checked={isOn}
-            onChange={() =>
-              dispatch({
-                type: "SET_PAGE_RANGE",
-                payload: {
-                  ...pageRange,
-                  isOn: !isOn,
-                },
-              })
-            }
-            className="form-checkbox h-5 w-5 text-primary"
-          />
-          <span className="font-cairo text-gray-700 dark:text-gray-300 mx-2">
-            تفعيل نطاق الصفحات
-          </span>
-        </label>
-      </div>
+
+      <StateCheck
+        isOn={isOn}
+        type="TOGGLE_PAGE_RANGE_MODE"
+        label="تفعيل نطاق الصفحات"
+      />
       <div className="flex flex-col items-center gap-4">
         <div className="flex flex-col items-center gap-2">
           <label
@@ -70,7 +56,7 @@ function PagesTab() {
             id="endPage"
             name="endPage"
             value={endPage}
-            min={startPage}
+            min={startPage + 1}
             max="604"
             onChange={handleInputChange}
             className="w-30 text-center text-xl p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary "

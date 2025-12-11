@@ -2,29 +2,18 @@ import { useState } from "react";
 import { Card } from "./ui/card";
 
 import useAppContext from "@/AppContext";
+import StateCheck from "./ui/StateCheck";
 
 function Juz() {
-  const { state, dispatch } = useAppContext();
+  const { state } = useAppContext();
   const isOn = state.isJuzMemorizationOn;
   return (
     <div className="space-y-2">
-      <div dir="rtl" className="my-3">
-        <label className="inline-flex items-center space-x-2 rtl:space-x-reverse mb-4">
-          <input
-            type="checkbox"
-            checked={isOn}
-            onChange={() =>
-              dispatch({
-                type: "TOGGLE_JUZ_MEMORIZATION_MODE",
-              })
-            }
-            className="form-checkbox h-5 w-5 text-primary"
-          />
-          <span className="font-cairo text-gray-700 dark:text-gray-300 mx-2">
-            تفعيل مراجعة الاجزاء المحفوظة
-          </span>
-        </label>
-      </div>
+      <StateCheck
+        isOn={isOn}
+        type="TOGGLE_JUZ_MEMORIZATION_MODE"
+        label="تفعيل مراجعة الاجزاء المحفوظة"
+      />
       {Array.from({ length: 30 }, (_, i) => (
         <JuzCard key={i + 1} juzNumber={i + 1} />
       ))}

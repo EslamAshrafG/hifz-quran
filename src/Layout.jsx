@@ -7,7 +7,7 @@ function Layout() {
     <SidebarProvider
       style={{
         "--sidebar-width": "25rem",
-        "--sidebar-width-mobile": "24rem",
+        "--sidebar-width-mobile": "22rem",
       }}
     >
       <AppSidebar />
