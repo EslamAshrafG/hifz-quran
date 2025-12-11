@@ -1,6 +1,7 @@
 import useAppContext from "@/AppContext";
 import { BookOpen } from "lucide-react";
 import { Button } from "./ui/button";
+import VoiceToText from "./ui/VoiceToText";
 
 function HeroDisplayer({ setTestStarted }) {
   const { state, _ } = useAppContext();
@@ -27,6 +28,9 @@ function HeroDisplayer({ setTestStarted }) {
           يرجى اختيار سور أو أجزاء أو نطاق صفحات للمراجعة قبل البدأ
         </div>
       )}
+      {/* <div className="flex items-center justify-center">
+        <VoiceToText />
+      </div> */}
       <Button
         onClick={() => setTestStarted(true)}
         disabled={!validStart}

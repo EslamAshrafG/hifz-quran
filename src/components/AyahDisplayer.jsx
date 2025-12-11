@@ -8,11 +8,11 @@ import useAyahQuery from "@/lib/useAyahQuery";
 import FetchLoader from "./ui/FetchLoader";
 import { toast } from "sonner";
 import AyahControls from "./ui/AyahControls";
+import QuranRecitation from "./ui/QuranRecitation"; // تأكد من المسار الصحيح
 
 function AyahDisplayer() {
   const { state } = useAppContext();
 
-  // 1. الحالة المبدئية
   const [queryParams, setQueryParams] = useState(() =>
     randomAyah(
       state?.isJuzMemorizationOn,
@@ -24,8 +24,6 @@ function AyahDisplayer() {
   );
 
   const [showFull, setShowFull] = useState(false);
-
-  // 2. استخدام الهوك
   const { data, isLoading, isError, refetch } = useAyahQuery(queryParams);
 
   const getPartialVerse = (text) => {
@@ -101,28 +99,32 @@ function AyahDisplayer() {
         <div className="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-primary/30 rounded-tl-3xl m-4 pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-primary/30 rounded-br-3xl m-4 pointer-events-none" />
 
-        <CardContent className="relative flex flex-col items-center justify-center p-10 min-h-[400px] text-center z-20">
+        <CardContent className="relative flex flex-col items-center justify-center p-6 md:p-10 min-h-[350px] text-center z-20">
           {/* النص القرآني */}
-          <div className="flex w-full">
+          <div className="flex w-full mb-6">
             <p
-              className="text-2xl md:text-4xl leading-[2.3] font-bold font-quran text-justify justify-start"
+              className="text-2xl md:text-4xl leading-[2.3] font-bold font-quran text-justify justify-start w-full"
               dir="rtl"
             >
               {data && (showFull ? data.text : getPartialVerse(data.text))}
             </p>
           </div>
 
-          {/* فاصل جمالي */}
-          <div className="w-1/3 h-px bg-linear-to-r from-transparent via-primary/40 to-transparent my-6" />
-
-          {/* معلومات الآية - تصميم كبسولة */}
+          {/* معلومات الآية */}
           {data && (
-            <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20 shadow-sm">
+            <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20 shadow-sm mb-4">
               <span className="font-quran">{data.surah.name}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
               <span>الآية {data.numberInSurah}</span>
             </div>
           )}
+
+          {/* الفاصل */}
+          <div className="w-1/2 h-px bg-border my-2" />
+
+          {/* مكون التسميع الصوتي */}
+          {/* استخدمنا key هنا لإجبار الرياكت على إعادة بناء المكون عند تغير الآية */}
+          {data && <QuranRecitation key={data.text} targetAyah={data.text} />}
         </CardContent>
       </Card>
 
@@ -133,6 +135,7 @@ function AyahDisplayer() {
         onPrevious={onPrevious}
         onNext={onNext}
         onRandom={onRandom}
+        data={data}
       />
     </div>
   );
