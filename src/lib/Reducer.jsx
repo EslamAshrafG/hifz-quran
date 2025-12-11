@@ -20,6 +20,12 @@ function reducer(state, action) {
       );
       return {
         ...state,
+        isSurahMemorizationOn: true,
+        isJuzMemorizationOn: false,
+        pageRange: {
+          ...state.pageRange,
+          isOn: false,
+        },
         memorizedSurahs: isMemorized
           ? state.memorizedSurahs.filter(
               (surah) => surah.number !== surahNumber
@@ -29,9 +35,15 @@ function reducer(state, action) {
     case "TOGGLE_JUZ_MEMORIZATION":
       const juzNumber = action.payload;
       const isJuzMemorized = state.memorizedJuzs.includes(juzNumber);
-      console.log(state);
+
       return {
         ...state,
+        isSurahMemorizationOn: false,
+        isJuzMemorizationOn: true,
+        pageRange: {
+          ...state.pageRange,
+          isOn: false,
+        },
         memorizedJuzs: isJuzMemorized
           ? state.memorizedJuzs.filter((juz) => juz !== juzNumber)
           : [...state.memorizedJuzs, juzNumber],
@@ -39,6 +51,8 @@ function reducer(state, action) {
     case "SET_PAGE_RANGE":
       return {
         ...state,
+        isSurahMemorizationOn: false,
+        isJuzMemorizationOn: false,
         pageRange: action.payload,
       };
     case "TOGGLE_SURAH_MEMORIZATION_MODE":

@@ -1,7 +1,6 @@
 import useAppContext from "@/AppContext";
 import { BookOpen } from "lucide-react";
 import { Button } from "./ui/button";
-import VoiceToText from "./ui/VoiceToText";
 
 function HeroDisplayer({ setTestStarted }) {
   const { state, _ } = useAppContext();

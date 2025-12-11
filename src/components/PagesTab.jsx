@@ -12,6 +12,7 @@ function PagesTab() {
       type: "SET_PAGE_RANGE",
       payload: {
         ...pageRange,
+        isOn: true,
         [name]: Number(value),
       },
     });
