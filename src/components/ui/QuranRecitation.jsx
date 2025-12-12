@@ -1,31 +1,34 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Mic, Square, Trash2, Copy, Info, Play, Pause } from "lucide-react";
+import {
+  Mic,
+  Square,
+  Play,
+  Pause,
+  Share2,
+  Download,
+  RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const QuranRecitation = () => {
-  const [text, setText] = useState("");
   const [isListening, setIsListening] = useState(false);
 
-  // Audio Recording States
+  // Audio States
   const [audioUrl, setAudioUrl] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null); // نحتاج الـ Blob للمشاركة
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
 
-  const recognitionRef = useRef(null);
+  const audioRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
 
-  // متغير لتخزين نوع الملف المدعوم
-  const [mimeType, setMimeType] = useState("");
-
-  // 1. دالة لاكتشاف الصيغة المدعومة في جهاز المستخدم
+  // اكتشاف الصيغة المناسبة (مهم جداً للآيفون)
   const getSupportedMimeType = () => {
     const types = [
+      "audio/mp4", // الأفضل للآيفون والمشاركة
       "audio/webm;codecs=opus",
       "audio/webm",
-      "audio/mp4", // الآيفون بيحب ده
       "audio/ogg",
       "audio/aac",
     ];
@@ -34,10 +37,18 @@ const QuranRecitation = () => {
         return type;
       }
     }
-    return ""; // لو معرفش يحدد، هيستخدم الافتراضي
+    return "";
   };
+
+  // متغير لتخزين نوع الملف المدعوم
+  const [mimeType] = useState(() => {
+    if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
+      return "";
+    }
+    return getSupportedMimeType();
+  });
+
   const stopEverything = () => {
-    if (recognitionRef.current) recognitionRef.current.abort();
     if (
       mediaRecorderRef.current &&
       mediaRecorderRef.current.state !== "inactive"
@@ -48,47 +59,15 @@ const QuranRecitation = () => {
     setIsPlaying(false);
   };
 
-  useEffect(() => {
-    // تحديد الصيغة عند تحميل الصفحة
-    setMimeType(getSupportedMimeType());
-
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "ar-SA";
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map((result) => result[0].transcript)
-          .join("");
-        setText(transcript);
-      };
-
-      recognition.onerror = (event) => {
-        // نتجاهل خطأ عدم السماح لو المستخدم لسه مابدأش
-        if (event.error === "not-allowed" && isListening) {
-          toast.error("يرجى السماح بالوصول للميكروفون");
-          stopEverything();
-        }
-      };
-
-      recognitionRef.current = recognition;
-    }
-
-    return () => {
-      stopEverything();
-    };
-  }, []); // eslint-disable-line
-
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // تنظيف التسجيل القديم إن وجد
+      setAudioUrl(null);
+      setAudioBlob(null);
 
-      // استخدام الصيغة المكتشفة
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const options = mimeType ? { mimeType } : {};
+
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
 
@@ -97,41 +76,30 @@ const QuranRecitation = () => {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        // إنشاء ملف بالصيغة الصحيحة
         const blob = new Blob(chunksRef.current, {
           type: mimeType || "audio/webm",
         });
         const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
+
+        setAudioBlob(blob); // حفظ الملف للمشاركة
+        setAudioUrl(url); // حفظ الرابط للتشغيل
 
         stream.getTracks().forEach((track) => track.stop());
       };
 
       mediaRecorderRef.current.start();
-
-      if (recognitionRef.current) {
-        setText("");
-        setAudioUrl(null);
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          console.log(e);
-        }
-      }
-
       setIsListening(true);
       toast.info("بدأ التسجيل...");
     } catch (err) {
-      toast.error("Error accessing microphone:", err);
-      toast.error("لا يمكن الوصول للميكروفون، تأكد من إعدادات Safari");
+      console.error(err);
+      toast.error("لا يمكن الوصول للميكروفون");
     }
   };
 
   const stopRecording = () => {
-    if (recognitionRef.current) recognitionRef.current.stop();
     if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
     setIsListening(false);
-    toast.success("تم الحفظ، يمكنك الاستماع والمراجعة");
+    toast.success("تم الانتهاء");
   };
 
   const togglePlayback = () => {
@@ -141,61 +109,108 @@ const QuranRecitation = () => {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      // إعادة التشغيل من البداية لو كان خلصان
       if (audioRef.current.ended) {
         audioRef.current.currentTime = 0;
       }
-
-      // التعامل مع Promise التشغيل (Safari بيحتاج ده)
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => setIsPlaying(true))
-          .catch((error) => {
-            console.error("Playback failed:", error);
-            toast.error("فشل تشغيل الصوت");
-            setIsPlaying(false);
-          });
-      }
+      audioRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          toast.error("فشل تشغيل الصوت");
+          setIsPlaying(false);
+        });
     }
   };
 
-  // const handleClear = () => {
-  //   setText("");
-  //   setAudioUrl(null);
-  //   setIsPlaying(false);
-  //   toast.success("تم الحذف");
-  // };
+  // دالة تحميل الملف
+  const handleDownload = () => {
+    if (!audioUrl) return;
+    const a = document.createElement("a");
+    a.href = audioUrl;
+    // تحديد الامتداد بناءً على نوع الملف
+    const extension = mimeType.includes("mp4") ? "m4a" : "webm";
+    a.download = `quran-recitation.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("جاري التحميل...");
+  };
+
+  // دالة المشاركة
+  const handleShare = async () => {
+    if (!audioBlob) return;
+
+    const extension = mimeType.includes("mp4") ? "m4a" : "webm";
+    const file = new File([audioBlob], `recitation.${extension}`, {
+      type: mimeType,
+    });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: "تلاوتي",
+          text: "استمع إلى تلاوتي",
+        });
+        toast.success("تمت المشاركة بنجاح");
+      } catch (error) {
+        console.error("Error sharing:", error);
+      }
+    } else {
+      toast.error(
+        "المشاركة غير مدعومة على هذا المتصفح، يمكنك التحميل بدلاً منها."
+      );
+      handleDownload(); // البديل لو المشاركة مش شغالة
+    }
+  };
+
+  useEffect(() => {
+    return () => stopEverything();
+  }, []);
 
   return (
     <div className="w-full mt-6 flex flex-col items-center gap-6">
+      {/* 1. أزرار التسجيل */}
       <div className="flex items-center justify-center gap-4 py-2">
-        {!isListening ? (
+        {!isListening && !audioUrl ? (
+          // وضع الاستعداد
           <Button
             onClick={startRecording}
-            className="w-16 h-16 rounded-full bg-primary hover:scale-110 transition-all shadow-xl border-4 border-primary/10"
+            className="w-20 h-20 rounded-full bg-primary hover:scale-110 transition-all shadow-xl border-4 border-primary/10"
             title="اضغط للبدء"
           >
-            <Mic className="w-8 h-8" />
+            <Mic className="w-10 h-10" />
           </Button>
-        ) : (
+        ) : isListening ? (
+          // وضع التسجيل
           <div className="relative">
             <span className="absolute inset-0 rounded-full bg-red-500 opacity-20 animate-ping"></span>
             <Button
               onClick={stopRecording}
               variant="destructive"
-              className="relative w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 shadow-xl z-10"
-              title="إيقاف وحفظ"
+              className="relative w-20 h-20 rounded-full bg-red-600 hover:bg-red-700 shadow-xl z-10"
+              title="إيقاف"
             >
-              <Square className="w-6 h-6 fill-current" />
+              <Square className="w-8 h-8 fill-current" />
             </Button>
           </div>
+        ) : (
+          // وضع ما بعد التسجيل (إعادة تسجيل)
+          <Button
+            onClick={startRecording}
+            variant="outline"
+            className="w-14 h-14 rounded-full border-2"
+            title="تسجيل جديد"
+          >
+            <RotateCcw className="w-6 h-6 text-muted-foreground" />
+          </Button>
         )}
       </div>
 
+      {/* 2. مشغل الصوت وأزرار التحكم */}
       {audioUrl && !isListening && (
-        <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-          {/* خاصية playsInline مهمة جدا للآيفون */}
+        <div className="w-full max-w-sm bg-card border rounded-xl p-4 shadow-sm animate-in slide-in-from-bottom-2">
+          {/* عنصر الصوت المخفي */}
           <audio
             ref={audioRef}
             src={audioUrl}
@@ -204,72 +219,47 @@ const QuranRecitation = () => {
             className="hidden"
           />
 
-          <Button
-            onClick={togglePlayback}
-            variant={isPlaying ? "secondary" : "default"}
-            className="rounded-full gap-2 px-6 transition-all"
-          >
-            {isPlaying ? (
-              <Pause className="w-4 h-4" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
-            {isPlaying ? "إيقاف مؤقت" : "استماع لتسجيلك"}
-          </Button>
+          <div className="flex flex-col gap-4">
+            {/* زر التشغيل الكبير */}
+            <div className="flex justify-center">
+              <Button
+                onClick={togglePlayback}
+                className="w-full rounded-full h-12 text-lg gap-2"
+                variant={isPlaying ? "secondary" : "default"}
+              >
+                {isPlaying ? (
+                  <Pause className="w-5 h-5" />
+                ) : (
+                  <Play className="w-5 h-5 fill-current" />
+                )}
+                {isPlaying ? "إيقاف مؤقت" : "استماع للتلاوة"}
+              </Button>
+            </div>
+
+            {/* أزرار الإجراءات (تحميل ومشاركة) */}
+            <div className="flex gap-2 justify-center">
+              <Button
+                onClick={handleShare}
+                variant="outline"
+                className="flex-1 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
+              >
+                <Share2 className="w-4 h-4" />
+                مشاركة
+              </Button>
+
+              <Button
+                onClick={handleDownload}
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+                title="تحميل"
+              >
+                <Download className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* <Card className="w-full relative min-h-[160px] p-6 bg-slate-50/50 dark:bg-slate-900/20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-center transition-all">
-        {text ? (
-          <div className="w-full space-y-4">
-            <p
-              className="text-xl md:text-2xl leading-[2] font-quran text-foreground animate-in fade-in zoom-in-95 duration-300"
-              dir="rtl"
-            >
-              {text}
-            </p>
-          </div>
-        ) : (
-          <div className="text-muted-foreground/50 text-sm flex flex-col items-center gap-2">
-            {isListening ? (
-              <span className="animate-pulse">جاري التسجيل والكتابة...</span>
-            ) : (
-              <span>اضغط الميكروفون واقرأ الآية...</span>
-            )}
-          </div>
-        )}
-
-        {text && !isListening && (
-          <div className="absolute top-2 left-2 flex gap-1 bg-background/80 p-1 rounded-lg border shadow-sm backdrop-blur-sm">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => {
-                navigator.clipboard.writeText(text);
-                toast.success("تم النسخ");
-              }}
-              title="نسخ"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-red-500 hover:bg-red-50"
-              onClick={handleClear}
-              title="مسح"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
-      </Card> */}
-
-      <div className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border/50 text-xs text-muted-foreground max-w-sm text-center">
-        <Info className="w-4 h-4 shrink-0 text-primary/70" />
-        <p>أداة للمراجعة الذاتية، التسجيل يحذف بمجرد تحديث الصفحة.</p>
-      </div>
     </div>
   );
 };

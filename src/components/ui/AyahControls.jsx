@@ -9,12 +9,14 @@ const AyahControls = ({
   onNext,
   onRandom,
   data,
+  disabled,
 }) => {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-center gap-4">
         <Button
           onClick={() => setShowFull(!showFull)}
+          disabled={disabled}
           variant="secondary"
           size="lg"
           className="min-w-[140px] shadow-sm hover:bg-secondary/80 transition-all"
@@ -30,7 +32,7 @@ const AyahControls = ({
         <div className="flex items-center gap-2">
           <Button
             onClick={onPrevious}
-            disabled={!data || data.numberInSurah <= 1}
+            disabled={!data || data.numberInSurah <= 1 || disabled}
             variant="outline"
             size="icon"
             className="w-12 h-12 rounded-full border-2 border-primary/20 hover:border-primary hover:bg-primary/5"
@@ -40,7 +42,11 @@ const AyahControls = ({
 
           <Button
             onClick={onNext}
-            disabled={!data || data.numberInSurah >= data.surah.numberOfAyahs}
+            disabled={
+              !data ||
+              data.numberInSurah >= data.surah.numberOfAyahs ||
+              disabled
+            }
             variant="outline"
             size="icon"
             className="w-12 h-12 rounded-full border-2 border-primary/20 hover:border-primary hover:bg-primary/5"
@@ -52,6 +58,7 @@ const AyahControls = ({
         <Button
           onClick={onRandom}
           className="min-w-[140px] shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+          disabled={disabled}
           size="lg"
         >
           <Shuffle className="w-5 h-5 mr-2" />
