@@ -138,7 +138,7 @@ function AyahDisplayer() {
 
           {/* مكون التسميع الصوتي */}
           {/* هذا المكون الآن خارج شرط الـ Loading وبالتالي لن يتم إعادة بنائه أبداً */}
-          <QuranRecitation />
+          <QuranRecitation surah={data?.surah?.name} />
         </CardContent>
       </Card>
 

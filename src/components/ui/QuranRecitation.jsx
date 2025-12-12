@@ -11,22 +11,23 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const QuranRecitation = () => {
+const QuranRecitation = ({ surah = "" }) => {
   const [isListening, setIsListening] = useState(false);
 
   // Audio States
   const [audioUrl, setAudioUrl] = useState(null);
-  const [audioBlob, setAudioBlob] = useState(null); // نحتاج الـ Blob للمشاركة
+  const [audioBlob, setAudioBlob] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const audioRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
 
-  // اكتشاف الصيغة المناسبة (مهم جداً للآيفون)
+  const [mimeType, setMimeType] = useState("");
+
   const getSupportedMimeType = () => {
     const types = [
-      "audio/mp4", // الأفضل للآيفون والمشاركة
+      "audio/mp4",
       "audio/webm;codecs=opus",
       "audio/webm",
       "audio/ogg",
@@ -40,13 +41,10 @@ const QuranRecitation = () => {
     return "";
   };
 
-  // متغير لتخزين نوع الملف المدعوم
-  const [mimeType] = useState(() => {
-    if (typeof window === "undefined" || typeof MediaRecorder === "undefined") {
-      return "";
-    }
-    return getSupportedMimeType();
-  });
+  useEffect(() => {
+    setMimeType(getSupportedMimeType());
+    return () => stopEverything();
+  }, []);
 
   const stopEverything = () => {
     if (
@@ -61,7 +59,6 @@ const QuranRecitation = () => {
 
   const startRecording = async () => {
     try {
-      // تنظيف التسجيل القديم إن وجد
       setAudioUrl(null);
       setAudioBlob(null);
 
@@ -81,8 +78,8 @@ const QuranRecitation = () => {
         });
         const url = URL.createObjectURL(blob);
 
-        setAudioBlob(blob); // حفظ الملف للمشاركة
-        setAudioUrl(url); // حفظ الرابط للتشغيل
+        setAudioBlob(blob);
+        setAudioUrl(url);
 
         stream.getTracks().forEach((track) => track.stop());
       };
@@ -122,34 +119,50 @@ const QuranRecitation = () => {
     }
   };
 
-  // دالة تحميل الملف
+  // --- دوال التحميل والمشاركة المعدلة ---
+
+  // دالة مساعدة لتوليد اسم الملف مع التاريخ
+  const getFilename = (ext) => {
+    const now = new Date();
+
+    const hour = String(now.getHours()).padStart(2, "0");
+    const min = String(now.getMinutes()).padStart(2, "0");
+
+    // التنسيق النهائي: Day-Month_Hour-Min
+    // مثال: recitation-12-05_14-30.m4a
+    const timestamp = `${hour}-${min}`;
+    return `تلاوة-${surah}-${timestamp}.${ext}`;
+  };
+
   const handleDownload = () => {
     if (!audioUrl) return;
     const a = document.createElement("a");
     a.href = audioUrl;
-    // تحديد الامتداد بناءً على نوع الملف
+
+    // تحديد الامتداد وتوليد الاسم
     const extension = mimeType.includes("mp4") ? "m4a" : "webm";
-    a.download = `quran-recitation.${extension}`;
+    a.download = getFilename(extension);
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    toast.success("جاري التحميل...");
+    toast.success("تم بدء التحميل");
   };
 
-  // دالة المشاركة
   const handleShare = async () => {
     if (!audioBlob) return;
 
     const extension = mimeType.includes("mp4") ? "m4a" : "webm";
-    const file = new File([audioBlob], `recitation.${extension}`, {
-      type: mimeType,
-    });
+    const filename = getFilename(extension);
+
+    // إنشاء ملف باسم مميز
+    const file = new File([audioBlob], filename, { type: mimeType });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({
           files: [file],
-          title: "تلاوتي",
+          title: "تلاوة قرآنية",
           text: "استمع إلى تلاوتي",
         });
         toast.success("تمت المشاركة بنجاح");
@@ -157,23 +170,16 @@ const QuranRecitation = () => {
         console.error("Error sharing:", error);
       }
     } else {
-      toast.error(
-        "المشاركة غير مدعومة على هذا المتصفح، يمكنك التحميل بدلاً منها."
-      );
-      handleDownload(); // البديل لو المشاركة مش شغالة
+      toast.error("المشاركة غير مدعومة، سيتم التحميل بدلاً منها.");
+      handleDownload();
     }
   };
 
-  useEffect(() => {
-    return () => stopEverything();
-  }, []);
-
   return (
     <div className="w-full mt-6 flex flex-col items-center gap-6">
-      {/* 1. أزرار التسجيل */}
+      {/* أزرار التحكم بالتسجيل */}
       <div className="flex items-center justify-center gap-4 py-2">
         {!isListening && !audioUrl ? (
-          // وضع الاستعداد
           <Button
             onClick={startRecording}
             className="w-20 h-20 rounded-full bg-primary hover:scale-110 transition-all shadow-xl border-4 border-primary/10"
@@ -182,7 +188,6 @@ const QuranRecitation = () => {
             <Mic className="w-10 h-10" />
           </Button>
         ) : isListening ? (
-          // وضع التسجيل
           <div className="relative">
             <span className="absolute inset-0 rounded-full bg-red-500 opacity-20 animate-ping"></span>
             <Button
@@ -195,7 +200,6 @@ const QuranRecitation = () => {
             </Button>
           </div>
         ) : (
-          // وضع ما بعد التسجيل (إعادة تسجيل)
           <Button
             onClick={startRecording}
             variant="outline"
@@ -207,10 +211,9 @@ const QuranRecitation = () => {
         )}
       </div>
 
-      {/* 2. مشغل الصوت وأزرار التحكم */}
+      {/* المشغل وأزرار المشاركة */}
       {audioUrl && !isListening && (
         <div className="w-full max-w-sm bg-card border rounded-xl p-4 shadow-sm animate-in slide-in-from-bottom-2">
-          {/* عنصر الصوت المخفي */}
           <audio
             ref={audioRef}
             src={audioUrl}
@@ -220,7 +223,6 @@ const QuranRecitation = () => {
           />
 
           <div className="flex flex-col gap-4">
-            {/* زر التشغيل الكبير */}
             <div className="flex justify-center">
               <Button
                 onClick={togglePlayback}
@@ -236,7 +238,6 @@ const QuranRecitation = () => {
               </Button>
             </div>
 
-            {/* أزرار الإجراءات (تحميل ومشاركة) */}
             <div className="flex gap-2 justify-center">
               <Button
                 onClick={handleShare}
